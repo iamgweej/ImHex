@@ -156,12 +156,22 @@ macro(createPackage)
     foreach (plugin IN LISTS PLUGINS)
         add_subdirectory("plugins/${plugin}")
         if (TARGET ${plugin})
-            set_target_properties(${plugin} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins)
-            set_target_properties(${plugin} PROPERTIES CARGO_BUILD_TARGET_DIR  ${CMAKE_BINARY_DIR}/plugins)
-            if (WIN32)
-                install(FILES ${plugin} RUNTIME DESTINATION ${PLUGINS_INSTALL_LOCATION})
+            
+            get_target_property(IS_RUST_PROJECT ${plugin} RUST_PROJECT)
+
+            if (IS_RUST_PROJECT)
+                set_target_properties(${plugin} PROPERTIES CARGO_BUILD_TARGET_DIR  ${CMAKE_BINARY_DIR}/plugins)
+
+                get_target_property(PLUGIN_LOCATION ${plugin} LOCATION)
+
+                install(FILES "${PLUGIN_LOCATION}/../${plugin}.hexplug" DESTINATION "${PLUGINS_INSTALL_LOCATION}")
             else ()
-                install(FILES ${plugin} LIBRARY DESTINATION ${PLUGINS_INSTALL_LOCATION})
+                set_target_properties(${plugin} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins)
+                if (WIN32)
+                    install(TARGETS ${plugin} RUNTIME DESTINATION ${PLUGINS_INSTALL_LOCATION})
+                else ()
+                    install(TARGETS ${plugin} LIBRARY DESTINATION ${PLUGINS_INSTALL_LOCATION})
+                endif ()
             endif ()
 
             add_dependencies(imhex ${plugin})
